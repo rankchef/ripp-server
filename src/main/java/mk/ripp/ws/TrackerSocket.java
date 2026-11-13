@@ -37,6 +37,7 @@ public class TrackerSocket {
                 switch (ctx.messageAsClass(ClientMessage.class)) {
                     case Announce announce -> announce(ctx, id, announce);
                     case Offer offer -> offer(ctx, id, offer);
+                    case Answer answer -> answer(ctx, id, answer);
                 }
             } catch (Exception e) {
                 ctx.send(Map.of("type", "error", "message", "Malformed message"));
@@ -106,6 +107,31 @@ public class TrackerSocket {
         ));
         if (!delivered && sockets.get(id) == ctx) {
             ctx.send(Map.of("type", "error", "message", "Seeder is not available"));
+        }
+    }
+
+    private void answer(WsContext ctx, SeederId id, Answer answer) {
+        if (sockets.get(id) != ctx) {
+            return;
+        }
+        if (answer.to() == null || answer.sdp() == null || answer.sdp().isBlank()) {
+            ctx.send(Map.of("type", "error", "message", "answer requires to and sdp"));
+            return;
+        }
+        if (answer.to().equals(id.value())) {
+            ctx.send(Map.of("type", "error", "message", "Cannot answer yourself"));
+            return;
+        }
+        if (sockets.get(id) != ctx) {
+            return;
+        }
+        boolean delivered = send(new SeederId(answer.to()), Map.of(
+                "type", "answer",
+                "from", id.value(),
+                "sdp", answer.sdp()
+        ));
+        if (!delivered && sockets.get(id) == ctx) {
+            ctx.send(Map.of("type", "error", "message", "Peer is not available"));
         }
     }
 
