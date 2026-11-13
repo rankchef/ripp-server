@@ -1,9 +1,12 @@
 package mk.ripp.controller;
 
-import mk.ripp.RipMetadata;
+import io.javalin.http.NotFoundResponse;
+import mk.ripp.model.RipMetadata;
+import mk.ripp.model.SeederId;
 import mk.ripp.stores.RipStore;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
+import mk.ripp.stores.SeedStore;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,12 +14,12 @@ import java.util.UUID;
 public class RipController {
     private static final int MAX_FILE_NAME_LENGTH = 255;
     private static final int LATEST_LIMIT = 10;
-
-
     private final RipStore rips;
+    private final SeedStore seeds;
 
-    public RipController(RipStore rips){
+    public RipController(RipStore rips, SeedStore seeds) {
         this.rips = rips;
+        this.seeds = seeds;
     }
 
     public void create(Context ctx){
@@ -32,6 +35,14 @@ public class RipController {
 
     public void list(Context ctx) {
         ctx.json(rips.latest(LATEST_LIMIT));
+    }
+
+    public void seeders(Context ctx) {
+        UUID id = ctx.pathParamAsClass("id", UUID.class).get();
+        if (rips.find(id).isEmpty()) {
+            throw new NotFoundResponse("Rip not found: " + id);
+        }
+        ctx.json(seeds.seeders(id).stream().map(SeederId::value).toList());
     }
 
     private static CreateRip readBody(Context ctx) {

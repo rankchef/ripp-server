@@ -1,7 +1,7 @@
 package mk.ripp.stores;
 
-import mk.ripp.RipMetadata;
-import mk.ripp.RipSummary;
+import mk.ripp.model.RipMetadata;
+import mk.ripp.model.RipSummary;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

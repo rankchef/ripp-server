@@ -1,4 +1,4 @@
-package mk.ripp;
+package mk.ripp.model;
 
 import java.util.List;
 import java.util.UUID;
