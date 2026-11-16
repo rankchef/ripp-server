@@ -37,6 +37,11 @@ public class RipController {
         ctx.json(rips.latest(LATEST_LIMIT));
     }
 
+    public void get(Context ctx) {
+        UUID id = ctx.pathParamAsClass("id", UUID.class).get();
+        ctx.json(rips.find(id).orElseThrow(() -> new NotFoundResponse("Rip not found: " + id)));
+    }
+
     public void seeders(Context ctx) {
         UUID id = ctx.pathParamAsClass("id", UUID.class).get();
         if (rips.find(id).isEmpty()) {

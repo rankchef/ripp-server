@@ -52,7 +52,7 @@ public class TrackerSocket {
     }
 
     private void announce(WsContext ctx, SeederId id, Announce announce) {
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         if (announce.rips() == null) {
@@ -65,7 +65,7 @@ public class TrackerSocket {
                 missing.add(ripId);
             }
         }
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         if (!missing.isEmpty()) {
@@ -76,7 +76,7 @@ public class TrackerSocket {
     }
 
     private void offer(WsContext ctx, SeederId id, Offer offer) {
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         if (offer.to() == null || offer.ripId() == null || offer.sdp() == null || offer.sdp().isBlank()) {
@@ -96,7 +96,7 @@ public class TrackerSocket {
             ctx.send(Map.of("type", "error", "message", "Seeder is not available"));
             return;
         }
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         boolean delivered = send(new SeederId(offer.to()), Map.of(
@@ -105,13 +105,13 @@ public class TrackerSocket {
                 "ripId", offer.ripId(),
                 "sdp", offer.sdp()
         ));
-        if (!delivered && sockets.get(id) == ctx) {
+        if (!delivered && connected(id, ctx)) {
             ctx.send(Map.of("type", "error", "message", "Seeder is not available"));
         }
     }
 
     private void answer(WsContext ctx, SeederId id, Answer answer) {
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         if (answer.to() == null || answer.sdp() == null || answer.sdp().isBlank()) {
@@ -122,7 +122,7 @@ public class TrackerSocket {
             ctx.send(Map.of("type", "error", "message", "Cannot answer yourself"));
             return;
         }
-        if (sockets.get(id) != ctx) {
+        if (!connected(id, ctx)) {
             return;
         }
         boolean delivered = send(new SeederId(answer.to()), Map.of(
@@ -130,9 +130,14 @@ public class TrackerSocket {
                 "from", id.value(),
                 "sdp", answer.sdp()
         ));
-        if (!delivered && sockets.get(id) == ctx) {
+        if (!delivered && connected(id, ctx)) {
             ctx.send(Map.of("type", "error", "message", "Peer is not available"));
         }
+    }
+
+    private boolean connected(SeederId id, WsContext ctx) {
+        WsContext stored = sockets.get(id);
+        return stored != null && stored.session == ctx.session;
     }
 
     private void disconnect(WsContext ctx) {
@@ -140,7 +145,11 @@ public class TrackerSocket {
         if (id == null) {
             return;
         }
-        if (!sockets.remove(id, ctx)) {
+        WsContext stored = sockets.get(id);
+        if (stored == null || stored.session != ctx.session) {
+            return;
+        }
+        if (!sockets.remove(id, stored)) {
             return;
         }
         seeds.remove(id);

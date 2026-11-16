@@ -8,7 +8,6 @@ import mk.ripp.ws.TrackerSocket;
 import java.nio.file.Path;
 import java.util.UUID;
 
-
 public class Main {
     public static void main(String[] args) {
         RipStore rips = new RipStore(Path.of("data", "ripp.db"));
@@ -19,6 +18,7 @@ public class Main {
         Javalin.create(config -> {
             config.routes.post("/rips/create", ripController::create);
             config.routes.get("/rips", ripController::list);
+            config.routes.get("/rips/{id}", ripController::get);
             config.routes.get("/rips/{id}/seeders", ripController::seeders);
             config.routes.ws("/ws", trackerSocket::configure);
             config.events.serverStopping(rips::close);
